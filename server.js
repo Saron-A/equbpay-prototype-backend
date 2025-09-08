@@ -4,19 +4,30 @@ const express = require("express");
 const path = require("path");
 const app = express();
 
+app.use(express.json()); // because express doesn't parse json by default and our req.body will be undefined
+
 const PORT = process.env.PORT || 3000;
 
-app.get("/", (req, res) => {
-  const groupId = req.params.id; // each user needs an id so that only relevant content is shown
-  res.sendFile(path.join(__dirname, "./pages/Homepage.jsx"));
+// routing is being handled by react so I don't need to define routes to different pages here
+// Instead I will focus on handling data, I.E. creating of groups, users, updating info and deleting when prompted
+// We don't have a database yet so I will use an array to store data temporarily
+
+let groups = [];
+
+// Group Creation
+app.post("/api/groups", (req, res) => {
+  groups.push(req.body);
+  res.status(201).send("Group created");
 });
 
-app.get("/group_details/:id", (req, res) => {
-  const groupId = req.params.id;
-  res.sendFile(path.join(__dirname, `./pages/Group_Details.jsx/${groupId}`));
+//Group Deletion
+app.delete("/api/groups/:id", (req, res) => {
+  let groupID = req.params.id;
+  groups = groups.filter((group) => String(group.id) !== String(groupID));
+  res.status(200).send("Group deleted");
 });
 
 app.listen(PORT, (error) => {
   if (error) throw error;
-  console.log(`Express server running at http://Localhost:${PORT}`);
+  console.log(`Express server running at http://localhost:${PORT}`);
 });
