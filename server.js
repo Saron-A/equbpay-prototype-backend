@@ -7,12 +7,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get("/", (req, res) => {
-  const groupId = req.params.id;
-  res.sendFile(path.join(__dirname, "./index.html"));
+  const groupId = req.params.id; // each user needs an id so that only relevant content is shown
+  res.sendFile(path.join(__dirname, "./pages/Homepage.jsx"));
 });
 
-app.get("api/groups/:id", (req, res) => {
-  res.json({ id: groupId, name: "Test Group" });
+app.get("/group_details/:id", (req, res) => {
+  const groupId = req.params.id;
+  res.sendFile(path.join(__dirname, `./pages/Group_Details.jsx/${groupId}`));
 });
 
 app.listen(PORT, (error) => {
