@@ -23,6 +23,11 @@ app.post("/api/groups", (req, res) => {
 });
 // successful integration of frontend and backend on group creation
 
+// Get all groups
+app.get("/api/groups", (req, res) => {
+  res.json(groups);
+});
+
 //Group Deletion
 app.delete("/api/groups/:id", (req, res) => {
   let groupID = req.params.id;
