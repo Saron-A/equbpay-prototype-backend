@@ -3,8 +3,10 @@ require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const app = express();
+const cors = require("cors");
 
 app.use(express.json()); // because express doesn't parse json by default and our req.body will be undefined
+app.use(cors()); // because our frontend and backend are on different ports
 
 const PORT = process.env.PORT || 3000;
 
