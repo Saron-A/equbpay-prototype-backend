@@ -21,6 +21,7 @@ app.post("/api/groups", (req, res) => {
   groups.push(req.body);
   res.status(201).send("Group created");
 });
+// successful integration of frontend and backend on group creation
 
 //Group Deletion
 app.delete("/api/groups/:id", (req, res) => {
