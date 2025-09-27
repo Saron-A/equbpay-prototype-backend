@@ -32,7 +32,7 @@ app.get("/api/groups", (req, res) => {
 app.delete("/api/groups/:id", (req, res) => {
   let groupID = req.params.id;
   groups = groups.filter((group) => String(group.id) !== String(groupID));
-  res.status(200).send("Group deleted");
+  res.status(200).json(groups);
 });
 
 app.listen(PORT, (error) => {
