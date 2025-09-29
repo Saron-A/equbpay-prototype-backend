@@ -45,6 +45,26 @@ app.delete("/api/groups/:id", (req, res) => {
   res.status(200).json(groups);
 });
 
+// editing member's contribution information
+app.put("/api/groups/:groupId/members/:memberId", (req, res) => {
+  let { groupId, memberId } = req.params;
+  let updatedMember = req.body;
+
+  groups = groups.map((grp) => {
+    if (grp.id === groupId) {
+      return {
+        ...grp,
+        members: grp.members.map((mem) =>
+          mem.memId === memberId ? updatedMember : mem
+        ),
+      };
+    }
+    return grp;
+  });
+
+  res.status(200).json(updatedMember);
+});
+
 app.listen(PORT, (error) => {
   if (error) throw error;
   console.log(`Express server running at http://localhost:${PORT}`);
