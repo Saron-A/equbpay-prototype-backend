@@ -28,6 +28,16 @@ app.get("/api/groups", (req, res) => {
   res.json(groups);
 });
 
+//edit group information
+app.put("/api/groups/edit_group/:id", (req, res) => {
+  let groupId = req.params.id;
+  let updatedGroup = req.body;
+  groups = groups.map((grp) =>
+    String(grp.id) === String(groupId) ? updatedGroup : grp
+  );
+  res.status(200).json(updatedGroup); // return a single group
+});
+
 //Group Deletion
 app.delete("/api/groups/:id", (req, res) => {
   let groupID = req.params.id;
