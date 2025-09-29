@@ -19,7 +19,7 @@ let groups = [];
 // Group Creation
 app.post("/api/groups", (req, res) => {
   groups.push(req.body);
-  res.status(201).send("Group created");
+  res.status(201).json(groups);
 });
 // successful integration of frontend and backend on group creation
 
