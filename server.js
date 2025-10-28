@@ -5,6 +5,8 @@ const path = require("path");
 const app = express();
 const cors = require("cors");
 
+const db = require("./db/queries");
+
 app.use(express.json()); // because express doesn't parse json by default and our req.body will be undefined
 app.use(cors()); // because our frontend and backend are on different ports
 
@@ -12,57 +14,21 @@ const PORT = process.env.PORT || 3000;
 
 // routing is being handled by react so I don't need to define routes to different pages here
 // Instead I will focus on handling data, I.E. creating of groups, users, updating info and deleting when prompted
-// We don't have a database yet so I will use an array to store data temporarily
 
-let groups = [];
-
-// Group Creation
-app.post("/api/groups", (req, res) => {
-  groups.push(req.body);
-  res.status(201).json(groups);
-});
-// successful integration of frontend and backend on group creation
-
-// Get all groups
-app.get("/api/groups", (req, res) => {
-  res.json(groups);
+app.use((req, res, next) => {
+  console.log(`[${req.method}] ${req.url}`);
+  next();
 });
 
-//edit group information
-app.put("/api/groups/edit_group/:id", (req, res) => {
-  let groupId = req.params.id;
-  let updatedGroup = req.body;
-  groups = groups.map((grp) =>
-    String(grp.id) === String(groupId) ? updatedGroup : grp
-  );
-  res.status(200).json(updatedGroup); // return a single group
-});
-
-//Group Deletion
-app.delete("/api/groups/:id", (req, res) => {
-  let groupID = req.params.id;
-  groups = groups.filter((group) => String(group.id) !== String(groupID));
-  res.status(200).json(groups);
-});
-
-// editing member's contribution information
-app.put("/api/groups/:groupId/members/:memberId", (req, res) => {
-  let { groupId, memberId } = req.params;
-  let updatedMember = req.body;
-
-  groups = groups.map((grp) => {
-    if (grp.id === groupId) {
-      return {
-        ...grp,
-        members: grp.members.map((mem) =>
-          mem.memId === memberId ? updatedMember : mem
-        ),
-      };
-    }
-    return grp;
-  });
-
-  res.status(200).json(updatedMember);
+// actual routes to the backend (database)
+app.get("/api/groups", async (req, res) => {
+  try {
+    const groups = await db.getAllGroups();
+    console.log(groups);
+    res.json(groups);
+  } catch (err) {
+    res.status(500).send({ error: err.message });
+  }
 });
 
 app.listen(PORT, (error) => {
