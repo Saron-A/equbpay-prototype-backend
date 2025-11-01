@@ -1,4 +1,11 @@
 const pool = require("./pool");
+//search users by username
+const getUserByUsername = async (username) => {
+  const { rows } = await pool.query("SELECT * FROM users WHERE username=$1", [
+    username,
+  ]);
+  return rows[0];
+};
 
 // queries to interact with the database will go here
 const createGroup = async (groupData) => {
@@ -35,6 +42,7 @@ const getAllGroups = async () => {
 };
 
 module.exports = {
+  getUserByUsername,
   createGroup,
   addMemberToGroup,
   getAllGroups,
