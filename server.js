@@ -35,10 +35,9 @@ passport.use(
     async (phoneNum, passcode, done) => {
       try {
         //get user by phonenumber then match the passcode
-        const user = await pool.query(
-          "SELECT * FROM users WHERE phone_number=$1",
-          [phoneNum]
-        );
+        const user = await pool.query("SELECT * FROM users WHERE phoneNum=$1", [
+          phoneNum,
+        ]);
         if (!user) {
           return done(null, false, { message: "User not found" });
         }
@@ -54,14 +53,14 @@ passport.use(
   )
 );
 
-app.post("/api/sign_up", async (req, res) => {
+app.post("/api/signup", async (req, res) => {
   try {
     const { phoneNum, passcode, confirm_pass, username } = req.body;
     //username and phoneNum must be unique
     //passcode and confirm_pass must match
 
     const { rows } = await pool.query(
-      "SELECT * FROM users WHERE username=$1 or phone_number=$2",
+      "SELECT * FROM users WHERE username=$1 or phoneNum=$2",
       [username, phoneNum]
     );
     if (rows.length > 0) {
@@ -72,7 +71,7 @@ app.post("/api/sign_up", async (req, res) => {
     }
     const hashedPasscode = await bcrypt.hash(passcode, 10);
     await pool.query(
-      "INSERT INTO users (username, phone_number, passcode) VALUES ($1,$2,$3)",
+      "INSERT INTO users (username, phoneNum, passcode) VALUES ($1,$2,$3)",
       [username, phoneNum, hashedPasscode]
     );
     return res.status(200).json({ message: "User registered successfully" });
