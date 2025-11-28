@@ -30,50 +30,60 @@ app.set("view engine", "ejs");
 
 //step 2: continued
 passport.use(
-  new localStrategy(async (username, password, done) => {
-    try {
-      const user = await db.getUserByUsername(username);
-      if (!user) {
-        return done(null, false, { message: "User not found" });
+  new localStrategy(
+    { usernameField: "phoneNum", passwordField: "passcode" },
+    async (phoneNum, passcode, done) => {
+      try {
+        //get user by phonenumber then match the passcode
+        const user = await pool.query(
+          "SELECT * FROM users WHERE phone_number=$1",
+          [phoneNum]
+        );
+        if (!user) {
+          return done(null, false, { message: "User not found" });
+        }
+        const match = await bcrypt.compare(passcode, user.passcode);
+        if (!match) {
+          return done(null, false, { message: "User not found" });
+        }
+        return done(null, user);
+      } catch (err) {
+        return done(err);
       }
-      const match = await bcrypt.compare(password, user.password);
-      if (!match) {
-        return done(null, false, { message: "User not found" });
-      }
-      return done(null, user);
-    } catch (err) {
-      return done(err);
     }
-  })
+  )
 );
 
-app.get("/sign_up", (req, res) => {
-  res.render("sign_up");
-});
-app.post("/sign_up", async (req, res) => {
+app.post("/api/sign_up", async (req, res) => {
   try {
-    const { username, password, confirm_pass } = req.body;
-    if (password !== confirm_pass) {
-      res.status(401).send("Passwords don't match");
+    const { phoneNum, passcode, confirm_pass, username } = req.body;
+    //username and phoneNum must be unique
+    //passcode and confirm_pass must match
+
+    const { rows } = await pool.query(
+      "SELECT * FROM users WHERE username=$1 or phone_number=$2",
+      [username, phoneNum]
+    );
+    if (rows.length > 0) {
+      return res.send({ error: "username or phone number already exists" });
     }
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await pool.query("INSERT INTO users (username, password) VALUES($1,$2)", [
-      username,
-      hashedPassword,
-    ]);
-    redirect("/login");
+    if (passcode !== confirm_pass) {
+      return res.send({ error: "passcodes do not match" });
+    }
+    const hashedPasscode = await bcrypt.hash(passcode, 10);
+    await pool.query(
+      "INSERT INTO users (username, phone_number, passcode) VALUES ($1,$2,$3)",
+      [username, phoneNum, hashedPasscode]
+    );
+    return res.status(200).json({ message: "User registered successfully" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: "Failed to register user" });
   }
 });
 
-app.get("/login", (req, res) => {
-  res.render("login");
-});
-
 app.post(
-  "/login",
+  "/api/login",
   passport.authenticate("local", {
     successRedirect: "/",
     failureRedirect: "/login",
