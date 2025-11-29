@@ -16,7 +16,12 @@ const db = require("./db/queries");
 const pool = require("./db/pool");
 
 app.use(express.json()); // because express doesn't parse json by default and our req.body will be undefined
-app.use(cors()); // because our frontend and backend are on different ports
+app.use(
+  cors({
+    origin: "http://localhost:5173", // your React app
+    credentials: true,
+  })
+); // because our frontend and backend are on different ports
 
 const PORT = process.env.PORT || 3000;
 // step 1: continued
@@ -35,9 +40,11 @@ passport.use(
     async (phoneNum, passcode, done) => {
       try {
         //get user by phonenumber then match the passcode
-        const user = await pool.query("SELECT * FROM users WHERE phoneNum=$1", [
-          phoneNum,
-        ]);
+        const { rows } = await pool.query(
+          "SELECT * FROM users WHERE phoneNum=$1",
+          [phoneNum]
+        );
+        const user = rows[0];
         if (!user) {
           return done(null, false, { message: "User not found" });
         }
@@ -52,6 +59,20 @@ passport.use(
     }
   )
 );
+
+//Step 3 : serialize and deserialize user
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  const { rows } = await pool.query("SELECT * FROM users WHERE id=$1", [id]);
+  const user = rows[0];
+  if (!user) {
+    return done(null, false);
+  }
+  return done(null, user);
+});
 
 app.post("/api/signup", async (req, res) => {
   try {
@@ -74,21 +95,38 @@ app.post("/api/signup", async (req, res) => {
       "INSERT INTO users (username, phoneNum, passcode) VALUES ($1,$2,$3)",
       [username, phoneNum, hashedPasscode]
     );
-    return res.status(200).json({ message: "User registered successfully" });
+    console.log("User registered successfully");
+    return res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Failed to register user" });
   }
 });
 
-app.post(
-  "/api/login",
-  passport.authenticate("local", {
-    successRedirect: "/",
-    failureRedirect: "/login",
-  })
-);
+app.post("/api/login", (req, res, next) => {
+  passport.authenticate("local", (err, user, info) => {
+    if (err) next(err);
+    if (!user) {
+      return res.status(400).json({ error: "Login failed" });
+    }
 
+    req.logIn(user, (err) => {
+      if (err) return next(err);
+      return res.json({
+        message: "Login successful",
+        user: { id: user.id, username: user.username, phoneNum: user.phoneNum },
+      });
+    });
+  })(req, res, next);
+});
+
+app.get("/api/users/current_user", (req, res) => {
+  if (req.isAuthenticated()) {
+    res.json({ user: req.user });
+  } else {
+    res.status(401).json({ error: "Not logged in" });
+  }
+});
 // routing is being handled by react so I don't need to define routes to different pages here
 // Instead I will focus on handling data, I.E. creating of groups, users, updating info and deleting when prompted
 
