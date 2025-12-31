@@ -73,6 +73,10 @@ passport.deserializeUser(async (id, done) => {
   }
   return done(null, user);
 });
+app.use((req, res, next) => {
+  console.log(`[${req.method}] ${req.url}`);
+  next();
+});
 
 app.post("/api/signup", async (req, res) => {
   try {
@@ -130,11 +134,6 @@ app.get("/api/users/current_user", (req, res) => {
 // routing is being handled by react so I don't need to define routes to different pages here
 // Instead I will focus on handling data, I.E. creating of groups, users, updating info and deleting when prompted
 
-app.use((req, res, next) => {
-  console.log(`[${req.method}] ${req.url}`);
-  next();
-});
-
 // actual routes to the backend (database)
 app.get("/api/groups", async (req, res) => {
   try {
@@ -143,6 +142,53 @@ app.get("/api/groups", async (req, res) => {
     res.json(groups);
   } catch (err) {
     res.status(500).send({ error: err.message });
+  }
+});
+
+app.post("/api/groups", async (req, res) => {
+  try {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    const { group_name, description, contribution } = req.body;
+
+    const creator_id = req.user.id;
+    const creation_date = new Date();
+
+    //  Create group
+    const group = await db.createGroup({
+      group_name,
+      description,
+      contribution,
+      creator_id,
+      creation_date,
+    });
+
+    // Add creator as member and admin
+    await db.addMemberToGroup(group.group_id, {
+      mem_name: req.user.username,
+      phone_num: req.user.phoneNum,
+    });
+
+    // Fetch updated group with members
+    const allGroups = await db.getAllGroups();
+    const createdGroup = allGroups.filter((g) => g.group_id === group.group_id); // array of he object
+
+    // Send authoritative data back
+    //the frontend expects an object not an array
+    res.status(201).json({
+      group,
+      members: [
+        {
+          mem_name: req.user.username,
+          phone_num: req.user.phoneNum,
+        },
+      ],
+    });
+  } catch (err) {
+    console.error("CREATE GROUP ERROR:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
