@@ -169,7 +169,7 @@ app.post("/api/groups", async (req, res) => {
     // Add creator as member and admin
     await db.addMemberToGroup(group.group_id, {
       mem_name: req.user.username,
-      phone_num: req.user.phone_num,
+      phone_num: req.user.phoneNum,
       user_id: req.user.id,
     });
 
@@ -184,7 +184,7 @@ app.post("/api/groups", async (req, res) => {
       members: [
         {
           mem_name: req.user.username,
-          phone_num: req.user.phone_num,
+          phone_num: req.user.phoneNum,
         },
       ],
     });
