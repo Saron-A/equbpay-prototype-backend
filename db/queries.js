@@ -15,12 +15,20 @@ const createGroup = async ({
   contribution,
   creation_date,
   creator_id,
+  no_of_members,
 }) => {
   const { rows } = await pool.query(
-    `INSERT INTO groups (group_name, description, contribution, creation_date, creator_id)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING group_id, group_name, description, contribution, creator_id, creation_date`,
-    [group_name, description, contribution, creation_date, creator_id]
+    `INSERT INTO groups (group_name, description, contribution, creation_date, creator_id, no_of_members)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING group_id, group_name, description, contribution, creator_id, creation_date, no_of_members`,
+    [
+      group_name,
+      description,
+      contribution,
+      creation_date,
+      creator_id,
+      no_of_members,
+    ]
   );
 
   return rows[0];
@@ -39,7 +47,7 @@ const addMemberToGroup = async (groupId, member) => {
 // get all groups with their members
 const getAllGroups = async () => {
   const { rows } = await pool.query(
-    `SELECT g.group_id, g.group_name, g.description, g.contribution, g.creation_date, m.mem_id, m.mem_name, m.phone_num FROM groups g
+    `SELECT g.group_id, g.group_name, g.description, g.contribution, g.creation_date, g.no_of_members, g.creator_id, m.mem_id, m.mem_name, m.phone_num FROM groups g
      LEFT JOIN members m ON g.group_id = m.group_id
      ORDER BY g.group_id`
   );

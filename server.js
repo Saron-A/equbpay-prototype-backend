@@ -151,7 +151,7 @@ app.post("/api/groups", async (req, res) => {
       return res.status(401).json({ error: "Not authenticated" });
     }
 
-    const { group_name, description, contribution } = req.body;
+    const { group_name, description, contribution, no_of_members } = req.body;
 
     const creator_id = req.user.id;
     const creation_date = new Date();
@@ -163,12 +163,14 @@ app.post("/api/groups", async (req, res) => {
       contribution,
       creator_id,
       creation_date,
+      no_of_members,
     });
 
     // Add creator as member and admin
     await db.addMemberToGroup(group.group_id, {
       mem_name: req.user.username,
-      phone_num: req.user.phoneNum,
+      phone_num: req.user.phone_num,
+      user_id: req.user.id,
     });
 
     // Fetch updated group with members
@@ -182,7 +184,7 @@ app.post("/api/groups", async (req, res) => {
       members: [
         {
           mem_name: req.user.username,
-          phone_num: req.user.phoneNum,
+          phone_num: req.user.phone_num,
         },
       ],
     });
