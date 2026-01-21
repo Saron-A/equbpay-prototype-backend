@@ -20,7 +20,7 @@ app.use(
   cors({
     origin: "http://localhost:5173", // your React app
     credentials: true,
-  })
+  }),
 ); // because our frontend and backend are on different ports
 
 const PORT = process.env.PORT || 3000;
@@ -36,13 +36,13 @@ app.set("view engine", "ejs");
 //step 2: continued
 passport.use(
   new localStrategy(
-    { usernameField: "phoneNum", passwordField: "passcode" },
-    async (phoneNum, passcode, done) => {
+    { usernameField: "phonenum", passwordField: "passcode" },
+    async (phonenum, passcode, done) => {
       try {
         //get user by phonenumber then match the passcode
         const { rows } = await pool.query(
-          "SELECT * FROM users WHERE phoneNum=$1",
-          [phoneNum]
+          "SELECT * FROM users WHERE phonenum=$1",
+          [phonenum],
         );
         const user = rows[0];
         if (!user) {
@@ -56,8 +56,8 @@ passport.use(
       } catch (err) {
         return done(err);
       }
-    }
-  )
+    },
+  ),
 );
 
 //Step 3 : serialize and deserialize user
@@ -80,13 +80,13 @@ app.use((req, res, next) => {
 
 app.post("/api/signup", async (req, res) => {
   try {
-    const { phoneNum, passcode, confirm_pass, username } = req.body;
-    //username and phoneNum must be unique
+    const { phonenum, passcode, confirm_pass, username } = req.body;
+    //username and phonenum must be unique
     //passcode and confirm_pass must match
 
     const { rows } = await pool.query(
-      "SELECT * FROM users WHERE username=$1 or phoneNum=$2",
-      [username, phoneNum]
+      "SELECT * FROM users WHERE username=$1 or phonenum=$2",
+      [username, phonenum],
     );
     if (rows.length > 0) {
       return res.send({ error: "username or phone number already exists" });
@@ -96,8 +96,8 @@ app.post("/api/signup", async (req, res) => {
     }
     const hashedPasscode = await bcrypt.hash(passcode, 10);
     await pool.query(
-      "INSERT INTO users (username, phoneNum, passcode) VALUES ($1,$2,$3)",
-      [username, phoneNum, hashedPasscode]
+      "INSERT INTO users (username, phonenum, passcode) VALUES ($1,$2,$3)",
+      [username, phonenum, hashedPasscode],
     );
     console.log("User registered successfully");
     return res.status(201).json({ message: "User registered successfully" });
@@ -118,10 +118,19 @@ app.post("/api/login", (req, res, next) => {
       if (err) return next(err);
       return res.json({
         message: "Login successful",
-        user: { id: user.id, username: user.username, phoneNum: user.phoneNum },
+        user: { id: user.id, username: user.username, phonenum: user.phonenum },
       });
     });
   })(req, res, next);
+});
+
+app.get("/api/users", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM users");
+    res.json(result.rows); // send array of users
+  } catch (err) {
+    res.status(500).send({ error: err.message });
+  }
 });
 
 app.get("/api/users/current_user", (req, res) => {
@@ -192,6 +201,15 @@ app.post("/api/groups", async (req, res) => {
     console.error("CREATE GROUP ERROR:", err);
     res.status(500).json({ error: err.message });
   }
+});
+
+app.post("api/logout", (req, res) => {
+  req.logout((err) => {
+    if (err) {
+      return res.status(500).json({ error: "Logout failed" });
+    }
+    return res.json({ message: "Logout successful" });
+  });
 });
 
 app.listen(PORT, (error) => {
